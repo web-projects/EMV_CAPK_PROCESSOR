@@ -4,10 +4,12 @@
     {
         public enum EMVFile
         {
+            [StringValue("UNDEFINED")]
+            Undefined = 0,
             [StringValue("Attended_emv.dat")]
-            Attended = 0,
-            [StringValue("Unttended_emv.dat")] 
-            Unattended = 1
+            Attended = 1,
+            [StringValue("Unattended_emv.dat")] 
+            Unattended = 2
         }
     }
 }

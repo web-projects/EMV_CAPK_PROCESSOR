@@ -31,6 +31,9 @@ namespace EMVCapkProcessor.Processor
                 }
 
                 await ProduceFileOutput(SetupCapkOutputFile(), capKFileSchema);
+
+                // delete working file
+                File.Delete(fileName);
             }
         }
 
@@ -75,7 +78,7 @@ namespace EMVCapkProcessor.Processor
             byte[] targetArray = new byte[8];
             Array.Copy(value, 0, targetArray, 3, 5);
             Array.Reverse(targetArray);
-           return StringValueAttribute.GetStringValue((AppProviderIdentifiers)BitConverter.ToInt64(targetArray, 0));
+            return StringValueAttribute.GetStringValue((AppProviderIdentifiers)BitConverter.ToInt64(targetArray, 0));
         }
 
         private static string[] SplitByLength(this string text, int length) =>
@@ -114,14 +117,24 @@ namespace EMVCapkProcessor.Processor
 
         private static string FindTargetFile(Enums.EMVFile target)
         {
-            string filePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "Assets");
+            string filePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "output");
+
+            if (!Directory.Exists(filePath))
+            {
+                Directory.CreateDirectory(filePath);
+            }
+
             if (Directory.Exists(filePath))
             {
-                string fileName = Path.Combine(filePath, StringValueAttribute.GetStringValue(target));
+                string fileName = StringValueAttribute.GetStringValue(target);
+                string targetFile = Path.Combine(Constants.TargetDirectory, fileName);
 
-                if (File.Exists(fileName))
+                if (FindEmbeddedResourceByName(StringValueAttribute.GetStringValue(target), targetFile))
                 {
-                    return fileName;
+                    if (File.Exists(targetFile))
+                    {
+                        return targetFile;
+                    }
                 }
             }
 
@@ -137,6 +150,38 @@ namespace EMVCapkProcessor.Processor
                 Directory.CreateDirectory(filePath);
             }
             return Path.Combine(filePath, CapkFileSchema.CapkOutputFile);
+        }
+
+        private static bool FindEmbeddedResourceByName(string fileName, string fileTarget)
+        {
+            bool result = false;
+
+            // Main Assembly contains embedded resources
+            Assembly mainAssembly = Assembly.GetEntryAssembly();
+
+            foreach (string name in mainAssembly.GetManifestResourceNames())
+            {
+                if (name.EndsWith(fileName, StringComparison.InvariantCultureIgnoreCase))
+                {
+                    using (Stream stream = mainAssembly.GetManifestResourceStream(name))
+                    {
+                        BinaryReader br = new BinaryReader(stream);
+                        // always create working file
+                        FileStream fs = File.Open(fileTarget, FileMode.Create);
+                        BinaryWriter bw = new BinaryWriter(fs);
+                        byte[] ba = new byte[stream.Length];
+                        stream.Read(ba, 0, ba.Length);
+                        bw.Write(ba);
+                        br.Close();
+                        bw.Close();
+                        stream.Close();
+                        result = true;
+                    }
+                    break;
+
+                }
+            }
+            return result;
         }
     }
 }
