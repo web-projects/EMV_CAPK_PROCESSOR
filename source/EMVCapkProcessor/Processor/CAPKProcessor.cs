@@ -47,7 +47,7 @@ namespace EMVCapkProcessor.Processor
                     {
                         if (!currentRID.Equals(schema.RegisterApplicationProviderIdentifier))
                         {
-                            await fs.WriteLineAsync($"[RID] # {RetrieveRIDName(schema.RegisterApplicationProviderIdentifier)}\n{schema.RegisterApplicationProviderIdentifier}\n");
+                            await fs.WriteLineAsync($"#--- {RetrieveRIDName(schema.RegisterApplicationProviderIdentifier)} ---#\n[RID]\n{schema.RegisterApplicationProviderIdentifier}\n");
                             currentRID = schema.RegisterApplicationProviderIdentifier;
                         }
                         Console.WriteLine($"# {schema.CAPublicKeyIndex} {schema.PublicKeyCheckSum}");
