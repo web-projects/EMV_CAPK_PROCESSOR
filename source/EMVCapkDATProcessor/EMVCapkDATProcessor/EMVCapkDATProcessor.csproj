@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{1D235353-A16A-48C9-ACAA-CA2DF05BACE2}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>EMVCapkProcessor</RootNamespace>
-    <AssemblyName>EMVCapkProcessor</AssemblyName>
+    <RootNamespace>EMVCapkDATProcessor</RootNamespace>
+    <AssemblyName>EMVCapkDATProcessor</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <LangVersion>9.0</LangVersion>
     <FileAlignment>512</FileAlignment>
