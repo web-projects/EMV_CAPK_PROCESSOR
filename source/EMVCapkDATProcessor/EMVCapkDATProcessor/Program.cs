@@ -1,10 +1,9 @@
-﻿using Microsoft.Extensions.Configuration;
-using EMVCapkProcessor.Processor;
-using System.Threading.Tasks;
-using static EMVCapkProcessor.Common.Enums;
-using EMVCapkProcessor.Common;
+﻿using EMVCapkProcessor.Processor;
+using Microsoft.Extensions.Configuration;
 using System;
 using System.Reflection;
+using System.Threading.Tasks;
+using static EMVCapkProcessor.Common.Enums;
 
 namespace EMVCapkProcessor
 {

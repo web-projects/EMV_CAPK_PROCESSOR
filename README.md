@@ -17,4 +17,5 @@ This an application to convert EMV CAPK payload into a Verifone formatted output
    
 ### HISTORY ###
 
-* 20211028 - Initial repository
+* 20211028 - Initial repository.
+* 20211215 - XML supported added.

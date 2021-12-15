@@ -60,10 +60,12 @@ namespace EMVCapkProcessor.Processor
                         }
                     }
 
+                    Debug.WriteLine($"OUT: \"{Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "output")}\"\n");
+
                     // write individual CAPK files
                     foreach (CapkFileSchema capk in capKFileSchema)
                     {
-                        string filename = string.Concat(capk.RegisterApplicationProviderIdentifier, ".", capk.CAPublicKeyIndex);
+                        string filename = string.Concat(capk.RegisterApplicationProviderIdentifier, ".", capk.CAPublicKeyIndex).ToLower();
                         await ProduceFileCAPKOutput(SetupCapkOutputFile(filename), capk);
                     }
                 }
@@ -285,7 +287,7 @@ namespace EMVCapkProcessor.Processor
         /// <returns></returns>
         private static async Task ProduceFileCAPKOutput(string fileName, CapkFileSchema capkFileSchema)
         {
-            Console.Write($"Creating output file: {fileName}");
+            Console.Write($"AID: {Path.GetFileName(fileName)}");
 
             StringBuilder sb = new StringBuilder();
 
@@ -300,7 +302,7 @@ namespace EMVCapkProcessor.Processor
                 await fs.WriteAsync(sb.ToString());
             }
 
-            Console.WriteLine("DONE!");
+            Console.WriteLine("");
         }
 
         #endregion --- CAPK INDIVIDUAL FILES ---
