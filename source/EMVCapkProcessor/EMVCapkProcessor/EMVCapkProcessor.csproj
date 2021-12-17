@@ -6,8 +6,8 @@
     <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
     <ProjectGuid>{1D235353-A16A-48C9-ACAA-CA2DF05BACE2}</ProjectGuid>
     <OutputType>Exe</OutputType>
-    <RootNamespace>EMVCapkDATProcessor</RootNamespace>
-    <AssemblyName>EMVCapkDATProcessor</AssemblyName>
+    <RootNamespace>EMVCapkProcessor</RootNamespace>
+    <AssemblyName>EMVCapkProcessor</AssemblyName>
     <TargetFrameworkVersion>v4.8</TargetFrameworkVersion>
     <LangVersion>9.0</LangVersion>
     <FileAlignment>512</FileAlignment>
@@ -136,6 +136,7 @@
     <Compile Include="Processor\CapkFileSchema.cs" />
     <Compile Include="Processor\CAPKProcessor.cs" />
     <Compile Include="Processor\CapkSchemaIndex.cs" />
+    <Compile Include="Processor\CapkXMLSchema.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
@@ -148,6 +149,9 @@
     <EmbeddedResource Include="Assets\Unattended_emv.dat" />
     <None Include="packages.config" />
   </ItemGroup>
-  <ItemGroup />
+  <ItemGroup>
+    <EmbeddedResource Include="Assets\Prod_Attended_EMV.xml" />
+    <EmbeddedResource Include="Assets\Prod_Unattended_EMV.xml" />
+  </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
 </Project>

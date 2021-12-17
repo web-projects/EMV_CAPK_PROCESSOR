@@ -22,52 +22,7 @@ namespace EMVCapkProcessor.Processor
             {
                 try
                 {
-                    XmlDocument xmlDoc = new XmlDocument();
-                    xmlDoc.Load(fileName);
-
-                    string strData = xmlDoc.InnerXml;
-                    XElement xElement = XElement.Parse(strData);
-
-                    // remove all comments in XML file
-                    xElement.DescendantNodes().OfType<XComment>().Remove();
-
-                    // note: In original XML file, remove all attributes in CAPKTable for children to load properly
-                    List<CapkXMLSchema> prodCAPKList = xElement.Elements("CAPKRow").Select(d => new CapkXMLSchema
-                    {
-                        CAPKId = d.Element("CAPKId").Value,
-                        RID = d.Element("RID").Value,
-                        CAPKIndex = d.Element("CAPKIndex").Value,
-                        CAPKModulus = d.Element("CAPKModulus").Value,
-                        CAPKExponent = d.Element("CAPKExponent").Value,
-                        CAPKExpDate = d.Element("CAPKExpDate").Value,
-                        CAPKChecksum = d.Element("CAPKChecksum").Value
-
-                    }).GroupBy(x => new
-                    {
-                        x.RID,
-                        x.CAPKIndex
-                    }).Select(x => x.First()).ToList();
-
-                    List<CapkFileSchema> capKFileSchema = new List<CapkFileSchema>();
-
-                    foreach (CapkXMLSchema capk in prodCAPKList)
-                    {
-                        CapkFileSchema schema = null;
-                        ParseSchemaXML(capk, out schema);
-                        if (schema is { })
-                        {
-                            capKFileSchema.Add(schema);
-                        }
-                    }
-
-                    Debug.WriteLine($"OUT: \"{Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "output")}\"\n");
-
-                    // write individual CAPK files
-                    foreach (CapkFileSchema capk in capKFileSchema)
-                    {
-                        string filename = string.Concat(capk.RegisterApplicationProviderIdentifier, ".", capk.CAPublicKeyIndex).ToLower();
-                        await ProduceFileCAPKOutput(SetupCapkOutputFile(filename), capk);
-                    }
+                    await GetExecutionMode(target, fileName);
                 }
                 catch (Exception ex)
                 {
@@ -80,17 +35,14 @@ namespace EMVCapkProcessor.Processor
             }
         }
 
-        private static string RetrieveRIDName(string ridValue)
+        static Task GetExecutionMode(Enums.EMVFile target, string fileName) => target switch
         {
-            byte[] value = ConversionHelper.HexToByteArray(ridValue);
-            byte[] targetArray = new byte[8];
-            Array.Copy(value, 0, targetArray, 3, 5);
-            Array.Reverse(targetArray);
-            return StringValueAttribute.GetStringValue((AppProviderIdentifiers)BitConverter.ToInt64(targetArray, 0));
-        }
-
-        private static string[] SplitByLength(this string text, int length) =>
-           text.EnumerateByLength(length).ToArray();
+            Enums.EMVFile.Attended => ProcessBundleOutput(fileName, "Attended"),
+            Enums.EMVFile.Attended_XML => ProcessIndividualOutput(fileName, "Attended"),
+            Enums.EMVFile.Unattended => ProcessBundleOutput(fileName, "Unattended"),
+            Enums.EMVFile.Unattended_XML => ProcessIndividualOutput(fileName, "Unattended"),
+            _ => throw new Exception($"Unknown target {target} provided.")
+        };
 
         private static string FindTargetFile(Enums.EMVFile target)
         {
@@ -151,6 +103,19 @@ namespace EMVCapkProcessor.Processor
         }
 
         #region    --- BUNDLED CAPK FILE OUTPUT ---
+
+        private static string[] SplitByLength(this string text, int length) =>
+           text.EnumerateByLength(length).ToArray();
+
+        private static string RetrieveRIDName(string ridValue)
+        {
+            byte[] value = ConversionHelper.HexToByteArray(ridValue);
+            byte[] targetArray = new byte[8];
+            Array.Copy(value, 0, targetArray, 3, 5);
+            Array.Reverse(targetArray);
+            return StringValueAttribute.GetStringValue((AppProviderIdentifiers)BitConverter.ToInt64(targetArray, 0));
+        }
+
         private static bool ParseSchema(string line, out CapkFileSchema schema)
         {
             schema = null;
@@ -182,10 +147,10 @@ namespace EMVCapkProcessor.Processor
             return false;
         }
 
-        private static string SetupCapkOutputFile()
+        private static string SetupCapkOutputFile(string emvMode)
         {
             // Setup output file
-            string filePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "output");
+            string filePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), Path.Combine("output", Path.Combine(emvMode, "ICCKEYS")));
             if (!Directory.Exists(filePath))
             {
                 Directory.CreateDirectory(filePath);
@@ -193,7 +158,7 @@ namespace EMVCapkProcessor.Processor
             return Path.Combine(filePath, CapkFileSchema.CapkOutputFile);
         }
 
-        private static async Task ProduceFileOutput(string fileName, List<CapkFileSchema> capkFileSchema)
+        private static async Task CreateFileOutput(string fileName, List<CapkFileSchema> capkFileSchema)
         {
             Console.Write("Creating output file...");
 
@@ -226,6 +191,26 @@ namespace EMVCapkProcessor.Processor
             }
 
             Console.WriteLine("DONE!");
+        }
+
+        private static async Task ProcessBundleOutput(string fileName, string emvMode)
+        {
+            List<CapkFileSchema> capKFileSchema = new List<CapkFileSchema>();
+
+            foreach (string line in File.ReadLines(fileName))
+            {
+                if (!line.Contains("CA_KEYS"))
+                {
+                    CapkFileSchema schema = null;
+                    ParseSchema(line, out schema);
+                    if (schema is { })
+                    {
+                        capKFileSchema.Add(schema);
+                    }
+                }
+            }
+
+            await CreateFileOutput(SetupCapkOutputFile(emvMode), capKFileSchema);
         }
 
         #endregion --- BUNDLED CAPK FILE OUTPUT ---
@@ -261,10 +246,10 @@ namespace EMVCapkProcessor.Processor
             return false;
         }
 
-        private static string SetupCapkOutputFile(string filename)
+        private static string SetupCapkOutputFile(string filename, string emvMode)
         {
             // Setup output file
-            string filePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "output");
+            string filePath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), Path.Combine("output", Path.Combine(emvMode, "AID")));
             if (!Directory.Exists(filePath))
             {
                 Directory.CreateDirectory(filePath);
@@ -303,6 +288,56 @@ namespace EMVCapkProcessor.Processor
             }
 
             Console.WriteLine("");
+        }
+
+        private static async Task ProcessIndividualOutput(string fileName, string emvMode)
+        {
+            XmlDocument xmlDoc = new XmlDocument();
+            xmlDoc.Load(fileName);
+
+            string strData = xmlDoc.InnerXml;
+            XElement xElement = XElement.Parse(strData);
+
+            // remove all comments in XML file
+            xElement.DescendantNodes().OfType<XComment>().Remove();
+
+            // note: In original XML file, remove all attributes in CAPKTable for children to load properly
+            List<CapkXMLSchema> prodCAPKList = xElement.Elements("CAPKRow").Select(d => new CapkXMLSchema
+            {
+                CAPKId = d.Element("CAPKId").Value,
+                RID = d.Element("RID").Value,
+                CAPKIndex = d.Element("CAPKIndex").Value,
+                CAPKModulus = d.Element("CAPKModulus").Value,
+                CAPKExponent = d.Element("CAPKExponent").Value,
+                CAPKExpDate = d.Element("CAPKExpDate").Value,
+                CAPKChecksum = d.Element("CAPKChecksum").Value
+
+            }).GroupBy(x => new
+            {
+                x.RID,
+                x.CAPKIndex
+            }).Select(x => x.First()).ToList();
+
+            List<CapkFileSchema> capKFileSchema = new List<CapkFileSchema>();
+
+            foreach (CapkXMLSchema capk in prodCAPKList)
+            {
+                CapkFileSchema schema = null;
+                ParseSchemaXML(capk, out schema);
+                if (schema is { })
+                {
+                    capKFileSchema.Add(schema);
+                }
+            }
+
+            Debug.WriteLine($"OUT: \"{Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), Path.Combine("output", Path.Combine(emvMode, "AID")))}\"\n");
+
+            // write individual CAPK files
+            foreach (CapkFileSchema capk in capKFileSchema)
+            {
+                string filename = string.Concat(capk.RegisterApplicationProviderIdentifier, ".", capk.CAPublicKeyIndex).ToLower();
+                await ProduceFileCAPKOutput(SetupCapkOutputFile(filename, emvMode), capk);
+            }
         }
 
         #endregion --- CAPK INDIVIDUAL FILES ---

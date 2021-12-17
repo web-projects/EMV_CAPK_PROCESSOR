@@ -1,6 +1,8 @@
 ﻿using EMVCapkProcessor.Processor;
 using Microsoft.Extensions.Configuration;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using static EMVCapkProcessor.Common.Enums;
@@ -21,18 +23,29 @@ namespace EMVCapkProcessor
                 .AddEnvironmentVariables()
                 .Build();
 
-            await CAPKProcessor.ProcessCapk(GetApplicationExecutionMode(configuration));
+            List<string> capkFiles = GetApplicationCapkFiles(configuration);
+            foreach(string capk in capkFiles)
+            { 
+                await CAPKProcessor.ProcessCapk(GetApplicationExecutionMode(capk));
+            }
         }
 
-        static EMVFile GetApplicationExecutionMode(IConfiguration configuration)
+        static List<string> GetApplicationCapkFiles(IConfiguration configuration)
         {
-            return GetExecutionMode(configuration.GetValue<string>("Application:CAPKFile"));
+            return configuration.GetSection("Application:CAPKFiles")?.GetChildren()?.Select(x => x.Value)?.ToList();
+        }
+
+        static EMVFile GetApplicationExecutionMode(string capkFile)
+        {
+            return GetExecutionMode(capkFile);
         }
 
         static EMVFile GetExecutionMode(string mode) => mode switch
         {
-            "Prod_Attended_EMV.xml" => EMVFile.Attended,
-            "Prod_Unattended_EMV.xml" => EMVFile.Unattended,
+            "Attended_emv.dat" => EMVFile.Attended,
+            "Prod_Attended_EMV.xml" => EMVFile.Attended_XML,
+            "Unattended_emv.dat" => EMVFile.Unattended,
+            "Prod_Unttended_EMV.xml" => EMVFile.Unattended_XML,
             _ => EMVFile.Undefined
         };
     }
