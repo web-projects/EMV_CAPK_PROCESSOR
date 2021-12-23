@@ -276,9 +276,9 @@ namespace EMVCapkProcessor.Processor
 
             StringBuilder sb = new StringBuilder();
 
-            sb.Append(string.Format("{0,3}", capkFileSchema.PublicKeyModulus.Length.ToString("D3")));
+            sb.Append(string.Format("{0,3}", (capkFileSchema.PublicKeyModulus.Length / 2).ToString("D3")));
             sb.Append(capkFileSchema.PublicKeyModulus);
-            sb.Append(string.Format("{0,2}", capkFileSchema.PublicKeyExponent.Length.ToString("D2")));
+            sb.Append(string.Format("{0,2}", (capkFileSchema.PublicKeyExponent.Length / 2).ToString("D2")));
             sb.Append(capkFileSchema.PublicKeyExponent);
             sb.Append(capkFileSchema.PublicKeyCheckSum);
 
