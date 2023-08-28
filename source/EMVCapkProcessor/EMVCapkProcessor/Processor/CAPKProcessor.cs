@@ -74,31 +74,38 @@ namespace EMVCapkProcessor.Processor
         {
             bool result = false;
 
-            // Main Assembly contains embedded resources
-            Assembly mainAssembly = Assembly.GetEntryAssembly();
-
-            foreach (string name in mainAssembly.GetManifestResourceNames())
+            try
             {
-                if (name.EndsWith(fileName, StringComparison.InvariantCultureIgnoreCase))
-                {
-                    using (Stream stream = mainAssembly.GetManifestResourceStream(name))
-                    {
-                        BinaryReader br = new BinaryReader(stream);
-                        // always create working file
-                        FileStream fs = File.Open(fileTarget, FileMode.Create);
-                        BinaryWriter bw = new BinaryWriter(fs);
-                        byte[] ba = new byte[stream.Length];
-                        stream.Read(ba, 0, ba.Length);
-                        bw.Write(ba);
-                        br.Close();
-                        bw.Close();
-                        stream.Close();
-                        result = true;
-                    }
-                    break;
+                // Main Assembly contains embedded resources
+                Assembly mainAssembly = Assembly.GetEntryAssembly();
 
+                foreach (string name in mainAssembly.GetManifestResourceNames())
+                {
+                    if (name.EndsWith(fileName, StringComparison.InvariantCultureIgnoreCase))
+                    {
+                        using (Stream stream = mainAssembly.GetManifestResourceStream(name))
+                        {
+                            BinaryReader br = new BinaryReader(stream);
+                            // always create working file
+                            FileStream fs = File.Open(fileTarget, FileMode.Create);
+                            BinaryWriter bw = new BinaryWriter(fs);
+                            byte[] ba = new byte[stream.Length];
+                            stream.Read(ba, 0, ba.Length);
+                            bw.Write(ba);
+                            br.Close();
+                            bw.Close();
+                            stream.Close();
+                            result = true;
+                        }
+                        break;
+                    }
                 }
             }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Exception: {ex.Message}");
+            }
+
             return result;
         }
 
